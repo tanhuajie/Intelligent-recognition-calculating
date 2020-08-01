@@ -1,0 +1,529 @@
+module Processing(
+    input [23:0]rgb_data,
+    output reg data_bin 
+    );
+    
+    wire[7:0]RGB_Data_R;              //像素数据 R 
+    wire [7:0]RGB_Data_G;             //像素数据 G 
+    wire [7:0]RGB_Data_B;             //像素数据 B
+    reg [7:0]Gray_Data;               //暂存灰度数据 
+    reg [32:0]Out_Data = 0; 
+
+    parameter YUZHI = 50;
+
+    assign RGB_Data_R = rgb_data[23:16];
+    assign RGB_Data_G = rgb_data[15:8];
+    assign RGB_Data_B = rgb_data[7:0];
+    
+    always@(*)
+    begin
+        Out_Data=(RGB_Data_R*30+RGB_Data_B*11+RGB_Data_G*59+50)/100;//灰度化
+        Gray_Data = Out_Data[7:0];
+        if(Gray_Data>=YUZHI)//二值化
+            begin
+                data_bin = 1;
+            end    
+        else
+            begin
+                data_bin = 0;
+            end    
+    end
+endmodule
+
+
+module Recognizing(
+    input rgb_vde,
+    input data_bin,
+    input [10:0]set_x,
+    input [9:0]set_y,
+    output reg [7:0]num_1 = 0,
+    output reg [7:0]num_2 = 0,
+    output reg [3:0]sym = 0
+    );
+    
+    parameter X_test_1 = 440;
+    parameter X_test_2 = 840;
+
+    parameter Y_test_1 = 343;
+    parameter Y_test_2 = 376;
+
+     //判断交点
+    reg [7:0] Y_check_1_1 = 8'hff;
+    reg [7:0] Y_check_1_2 = 8'hff;
+    reg [7:0] Y_check_1_3 = 8'hff;
+    
+    reg [7:0] Y_check_2_1 = 8'hff;
+    reg [7:0] Y_check_2_2 = 8'hff;
+    reg [7:0] Y_check_2_3 = 8'hff;
+    
+    reg [7:0] X_check_1 = 8'hff;
+    reg [7:0] X_check_2 = 8'hff;
+    
+    //统计交点个数
+    reg [1:0] cnt_y_1_1 = 0;
+    reg [1:0] cnt_y_1_2 = 0;
+    reg [1:0] cnt_y_1_3 = 0;
+    
+    reg [1:0] cnt_y_2_1 = 0;
+    reg [1:0] cnt_y_2_2 = 0;
+    reg [1:0] cnt_y_2_3 = 0;
+    
+    reg [1:0] cnt_x_1 = 0;
+    reg [1:0] cnt_x_2 = 0;
+    
+   //分辨235
+    reg [10:0] contrast_1 = 0; 
+    reg [10:0] contrast_2 = 0;
+    reg [10:0] contrast_3 = 0; 
+    reg [10:0] contrast_4 = 0;
+    
+    reg a,b,c,d;//判断位置
+    
+    always@(set_x)
+    begin
+        if(rgb_vde)
+            begin
+                if(set_y == Y_test_1)
+                    begin
+                        if((set_x>=370)&&(set_x<=510))
+                            begin
+                                Y_check_1_1 <={Y_check_1_1[7:1],data_bin};
+                                if(Y_check_1_1 == 8'hf0)
+                                    begin
+                                        cnt_y_1_1 = cnt_y_1_1 + 1;
+                                        contrast_1 = set_x;//记录交点位置，便于分辨235
+                                    end
+                                else
+                                    begin
+                                        cnt_y_1_1 = cnt_y_1_1;
+                                    end
+                            end
+                        else if((set_x>=570)&&(set_x<=710))
+                            begin
+                                Y_check_1_2 <={Y_check_1_2[7:1],data_bin};
+                                if(Y_check_1_2 == 8'hf0)
+                                    begin
+                                        cnt_y_1_2 = cnt_y_1_2 + 1;
+                                    end
+                                else
+                                    begin
+                                        cnt_y_1_2 = cnt_y_1_2;
+                                    end
+                            end
+                        else if((set_x>=770)&&(set_x<=910))
+                            begin
+                                Y_check_1_3 <={Y_check_1_3[7:1],data_bin};
+                                if(Y_check_1_3 == 8'hf0)
+                                    begin
+                                        cnt_y_1_3 = cnt_y_1_3 + 1;
+                                        contrast_2 = set_x;//记录交点位置，便于分辨235
+                                    end
+                                else
+                                    begin
+                                        cnt_y_1_3 = cnt_y_1_3;
+                                    end
+                            end
+                        else
+                            begin
+                                Y_check_1_1 = 8'hff;
+                                Y_check_1_2 = 8'hff;
+                                Y_check_1_3 = 8'hff;
+                            end      
+                    end
+                else if(set_y == Y_test_2)
+                    begin
+                        if((set_x>=370)&&(set_x<=510))
+                            begin
+                                Y_check_2_1 <={Y_check_2_1[7:1],data_bin};
+                                if(Y_check_2_1 == 8'hf0)
+                                    begin
+                                        cnt_y_2_1 = cnt_y_2_1 + 1;
+                                        contrast_3 = set_x;//记录交点位置，便于分辨235
+                                    end
+                                else
+                                    begin
+                                        cnt_y_2_1 = cnt_y_2_1;
+                                    end
+                            end
+                        else if((set_x>=570)&&(set_x<=710))
+                            begin
+                                Y_check_2_2 <={Y_check_2_2[7:1],data_bin};
+                                if(Y_check_2_2 == 8'hf0)
+                                    begin
+                                        cnt_y_2_2 = cnt_y_2_2 + 1;
+                                    end
+                                else
+                                    begin
+                                        cnt_y_2_2 = cnt_y_2_2;
+                                    end
+                            end
+                        else if((set_x>=770)&&(set_x<=910))
+                            begin
+                                Y_check_2_3 <={Y_check_2_3[7:1],data_bin};
+                                if(Y_check_2_3 == 8'hf0)
+                                    begin
+                                        cnt_y_2_3 = cnt_y_2_3 + 1;
+                                        contrast_4 = set_x;//记录交点位置，便于分辨235
+                                    end
+                                else
+                                    begin
+                                        cnt_y_2_3 = cnt_y_2_3;
+                                    end
+                            end
+                        else
+                            begin
+                                Y_check_2_1 = 8'hff;
+                                Y_check_2_2 = 8'hff;
+                                Y_check_2_3 = 8'hff;
+                            end      
+                    end
+                else if((set_y>=290)&&(set_y<=430))
+                    begin
+                        if(set_x == X_test_1)
+                            begin
+                                X_check_1 <={X_check_1[7:1],data_bin};
+                                if(X_check_1 == 8'hf0)
+                                    begin
+                                        cnt_x_1 = cnt_x_1 + 1;
+                                    end
+                                else
+                                    begin
+                                        cnt_x_1 = cnt_x_1;
+                                    end
+                            end
+                        else if(set_x == X_test_2)
+                            begin
+                                X_check_2 <={X_check_2[7:1],data_bin};
+                                if(X_check_2 == 8'hf0)
+                                    begin
+                                        cnt_x_2 = cnt_x_2 + 1;
+                                    end
+                                else
+                                    begin
+                                        cnt_x_2 = cnt_x_2;
+                                    end
+                            end
+                        else
+                            begin
+                                 cnt_x_1 = cnt_x_1;
+                                 cnt_x_2 = cnt_x_2;
+                            end
+                    end
+                else if((set_y == 500)&&(set_x == 500))
+                    begin
+                        sym = {cnt_y_1_2,cnt_y_2_2};
+                        if(contrast_1 >= X_test_1)//判断235 的交点关系
+                            begin
+                                a = 1;
+                            end
+                        else
+                            begin
+                                a = 0;
+                            end
+                        if(contrast_2 >= X_test_2)
+                            begin
+                                b = 1;
+                            end
+                        else
+                            begin
+                                b = 0;
+                            end
+                        if(contrast_3 >= X_test_1)
+                            begin
+                                c = 1;
+                            end
+                        else
+                            begin
+                                c = 0;
+                            end
+                        if(contrast_4 >= X_test_2)
+                            begin
+                                d = 1;
+                            end
+                        else
+                            begin
+                                d = 0;
+                            end
+                            
+                        num_1 = {cnt_y_1_1,cnt_y_2_1,cnt_x_1,a,c};//判断依据为交点数和交点位置
+                        num_2 = {cnt_y_1_2,cnt_y_2_2,cnt_x_2,b,d};//判断依据为交点数和交点位置
+                        X_check_1 = 8'hff;//重置
+                        X_check_2 = 8'hff;
+                        cnt_y_1_1 = 0;
+                        cnt_y_1_2 = 0;
+                        cnt_y_1_3 = 0;
+                        cnt_y_2_1 = 0;
+                        cnt_y_2_2 = 0;
+                        cnt_y_2_3 = 0;
+                        cnt_x_1 = 0;
+                        cnt_x_2 = 0;
+                    end
+            end
+    end
+endmodule
+
+
+module Judging(
+    input [7:0]num_1,
+    input [7:0]num_2,
+    input [3:0]sym,
+    output reg [4:0]shape_1,
+    output reg [4:0]shape_2,
+    output reg [1:0]shape_sym
+    );
+    
+    wire [5:0] point_1_1 = {num_1[7:2]};
+    wire [1:0] point_1_2 = {num_1[1:0]};
+    wire [5:0] point_2_1 = {num_2[7:2]};
+    wire [1:0] point_2_2 = {num_2[1:0]};
+    
+    always@(*)
+    begin
+        case(point_1_1)
+                        9'b10_10_10: shape_1 = 4'd0;
+                        9'b01_01_01: shape_1 = 4'd1;
+                        9'b10_01_10: shape_1 = 4'd4; 
+                        9'b01_10_11: shape_1 = 4'd6;
+                        9'b01_01_10: shape_1 = 4'd7;
+                        9'b10_10_11: shape_1 = 4'd8; 
+                        9'b10_01_11: shape_1 = 4'd9;
+                        9'b01_01_11: case(point_1_2)
+                                                2'b10: shape_1 = 4'd2;
+                                                2'b01: shape_1 = 4'd5;
+                                                2'b11: shape_1 = 4'd3;
+                                                default: shape_1 = 4'd0;
+                                     endcase
+                       default: shape_1 = 4'd0;
+        endcase
+        case(point_2_1)
+                        9'b10_10_10: shape_2 = 4'd0;
+                        9'b01_01_01: shape_2 = 4'd1;
+                        9'b10_01_10: shape_2 = 4'd4; 
+                        9'b01_10_11: shape_2 = 4'd6;
+                        9'b01_01_10: shape_2 = 4'd7;
+                        9'b10_10_11: shape_2 = 4'd8; 
+                        9'b10_01_11: shape_2 = 4'd9;
+                        9'b01_01_11: case(point_2_2)
+                                                2'b10: shape_2 = 4'd2;
+                                                2'b01: shape_2 = 4'd5;
+                                                2'b11: shape_2 = 4'd3;
+                                                default: shape_2 = 4'd0;
+                                     endcase
+                       default: shape_2 = 4'd0;
+        endcase
+        case(sym)
+                    4'b1010: shape_sym = 2'b11;
+                    4'b0101: shape_sym = 2'b01;
+                    4'b0000: shape_sym = 2'b10;
+                    default: shape_sym = 2'b00;
+        endcase
+                         
+    end
+
+
+endmodule
+
+
+module Calculating(
+    input clk,
+    input [3:0]shape_1,
+    input [3:0]shape_2,
+    input [1:0]shape_sym,
+    output reg [3:0]result_1,
+    output reg [3:0]result_2
+    );
+    
+    reg [6:0]result = 0;
+    reg [3:0]check_1 = 0;
+    reg [6:0]check_2 = 0;
+    
+    always@(*)
+    begin
+        case(shape_sym)
+            2'b01: result = shape_1 + shape_2;
+            2'b10: result = shape_1 - shape_2;
+            2'b11: result = shape_1 * shape_2;
+            default: result = 0;
+        endcase
+        check_2 = result;
+        if(check_2[6:3] >= 4'b1010)//1
+            begin
+                check_1 = {check_1[2:0],1'b1};
+                check_2 = check_2 - 7'b1010000; 
+            end
+        else
+            begin
+                check_1 = {check_1[2:0],1'b0};
+            end
+        if(check_2[5:2] >= 4'b1010)//2
+            begin
+                check_1 = {check_1[2:0],1'b1};
+                check_2 = check_2 - 7'b0101000; 
+            end
+        else
+            begin
+                check_1 = {check_1[2:0],1'b0};
+            end
+        if(check_2[4:1] >= 4'b1010)//3
+            begin
+                check_1 = {check_1[2:0],1'b1};
+                check_2 = check_2 - 7'b0010100; 
+            end
+        else
+            begin
+                check_1 = {check_1[2:0],1'b0};
+            end
+        if(check_2[3:0] >= 4'b1010)//4
+            begin
+                check_1 = {check_1[2:0],1'b1};
+                check_2 = check_2 - 7'b0001010; 
+            end
+        else
+            begin
+                check_1 = {check_1[2:0],1'b0};
+            end
+        result_1 = check_1;
+        result_2 = check_2[3:0];
+    end
+    
+    
+endmodule
+
+module Rom(
+    input clk,
+    input ena_a,
+    input ena_b,
+    input [3:0]result_1,
+    input [3:0]result_2,
+    input [11:0]address,
+    output reg [7:0]R_Data
+    );
+
+    wire ena_0 = (((ena_a == 1)&&(result_1 == 4'd0))||((ena_b == 1)&&(result_2 == 4'd0)))? 1:0;
+    wire ena_1 = (((ena_a == 1)&&(result_1 == 4'd1))||((ena_b == 1)&&(result_2 == 4'd1)))? 1:0;
+    wire ena_2 = (((ena_a == 1)&&(result_1 == 4'd2))||((ena_b == 1)&&(result_2 == 4'd2)))? 1:0;
+    wire ena_3 = (((ena_a == 1)&&(result_1 == 4'd3))||((ena_b == 1)&&(result_2 == 4'd3)))? 1:0;
+    wire ena_4 = (((ena_a == 1)&&(result_1 == 4'd4))||((ena_b == 1)&&(result_2 == 4'd4)))? 1:0;
+    wire ena_5 = (((ena_a == 1)&&(result_1 == 4'd5))||((ena_b == 1)&&(result_2 == 4'd5)))? 1:0;
+    wire ena_6 = (((ena_a == 1)&&(result_1 == 4'd6))||((ena_b == 1)&&(result_2 == 4'd6)))? 1:0;
+    wire ena_7 = (((ena_a == 1)&&(result_1 == 4'd7))||((ena_b == 1)&&(result_2 == 4'd7)))? 1:0;
+    wire ena_8 = (((ena_a == 1)&&(result_1 == 4'd8))||((ena_b == 1)&&(result_2 == 4'd8)))? 1:0;
+    wire ena_9 = (((ena_a == 1)&&(result_1 == 4'd9))||((ena_b == 1)&&(result_2 == 4'd9)))? 1:0;
+    
+    wire [7:0]Data_0;
+    wire [7:0]Data_1;
+    wire [7:0]Data_2; 
+    wire [7:0]Data_3;
+    wire [7:0]Data_4; 
+    wire [7:0]Data_5;
+    wire [7:0]Data_6; 
+    wire [7:0]Data_7;
+    wire [7:0]Data_8; 
+    wire [7:0]Data_9;
+    
+
+ //用于判断Address的输入端   
+    wire [13:0] Addr_Out_0 = (ena_0)? address : 0;
+    wire [13:0] Addr_Out_1 = (ena_1)? address : 0;
+    wire [13:0] Addr_Out_2 = (ena_2)? address : 0;
+    wire [13:0] Addr_Out_3 = (ena_3)? address : 0;
+    wire [13:0] Addr_Out_4 = (ena_4)? address : 0;
+    wire [13:0] Addr_Out_5 = (ena_5)? address : 0;
+    wire [13:0] Addr_Out_6 = (ena_6)? address : 0;
+    wire [13:0] Addr_Out_7 = (ena_7)? address : 0;
+    wire [13:0] Addr_Out_8 = (ena_8)? address : 0;
+    wire [13:0] Addr_Out_9 = (ena_9)? address : 0;
+
+ //输出mode，用于判断 R_data的接收端 
+    wire [9:0] mode = {ena_0,ena_1,ena_2,ena_3,ena_4,ena_5,ena_6,ena_7,ena_8,ena_9};
+    
+//用于判断输出端
+    always@(clk)
+    begin
+        case(mode)
+            10'b100_000_000_0: R_Data = Data_0;
+            10'b010_000_000_0: R_Data = Data_1;
+            10'b001_000_000_0: R_Data = Data_2;
+            10'b000_100_000_0: R_Data = Data_3;
+            10'b000_010_000_0: R_Data = Data_4;
+            10'b000_001_000_0: R_Data = Data_5;
+            10'b000_000_100_0: R_Data = Data_6;
+            10'b000_000_010_0: R_Data = Data_7;
+            10'b000_000_001_0: R_Data = Data_8;
+            10'b000_000_000_1: R_Data = Data_9;
+            default: R_Data = R_Data;
+        endcase
+    end
+    
+     ROM_0 u0 (        
+        .clka(clk),                          
+        .ena(ena_0),    
+        .addra(Addr_Out_0),                  
+        .douta(Data_0)          
+        );
+        
+     ROM_1 u1 (        
+        .clka(clk),                          
+        .ena(ena_1),    
+        .addra(Addr_Out_1),                  
+        .douta(Data_1)          
+        );
+        
+     ROM_2 u2 (        
+        .clka(clk),                          
+        .ena(ena_2),    
+        .addra(Addr_Out_2),                  
+        .douta(Data_2)          
+        );
+        
+     ROM_3 u3 (        
+        .clka(clk),                          
+        .ena(ena_3),    
+        .addra(Addr_Out_3),                  
+        .douta(Data_3)          
+        );
+        
+     ROM_4 u4 (        
+        .clka(clk),                          
+        .ena(ena_4),    
+        .addra(Addr_Out_4),                  
+        .douta(Data_4)          
+        );
+        
+     ROM_5 u5 (        
+        .clka(clk),                          
+        .ena(ena_5),    
+        .addra(Addr_Out_5),                  
+        .douta(Data_5)          
+        );
+        
+     ROM_6 u6 (        
+        .clka(clk),                          
+        .ena(ena_6),    
+        .addra(Addr_Out_6),                  
+        .douta(Data_6)          
+        );
+        
+     ROM_7 u7 (        
+        .clka(clk),                          
+        .ena(ena_7),    
+        .addra(Addr_Out_7),                  
+        .douta(Data_7)          
+        );
+        
+     ROM_8 u8 (        
+        .clka(clk),                          
+        .ena(ena_8),    
+        .addra(Addr_Out_8),                  
+        .douta(Data_8)          
+        );
+        
+     ROM_9 u9 (        
+        .clka(clk),                          
+        .ena(ena_9),    
+        .addra(Addr_Out_9),                  
+        .douta(Data_9)          
+        );
+endmodule
+
+
